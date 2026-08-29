@@ -15,11 +15,11 @@ Project Context is derived knowledge. Source code, tests, build configuration, i
 The profile has four recovery states:
 
 - `UNINITIALIZED`: no validated Project Context checkpoint exists.
-- `VALID`: `validated_revision` equals the authoritative current repository revision.
-- `DIRTY`: the authoritative repository revision differs from `validated_revision` and the delta can be established.
+- `VALID`: `validated_revision` equals the authoritative current repository revision and no relevant staged, unstaged, or untracked repository changes are present.
+- `DIRTY`: committed repository state or the working tree differs from the validated checkpoint and the affected paths can be established.
 - `UNKNOWN`: a prior checkpoint exists but freshness cannot be established safely.
 
-A Runtime or adapter MUST derive these states from repository/profile evidence, not from conversational memory.
+A Runtime or adapter MUST derive these states from repository/profile evidence, not from conversational memory. Working-tree changes are part of freshness: an unchanged `HEAD` alone is insufficient evidence for `VALID`.
 
 ## Profile metadata
 
@@ -65,9 +65,9 @@ okf://<library>/
 A new session or subagent SHOULD:
 
 1. resolve the Project Context profile and mounted Library;
-2. evaluate freshness against the authoritative repository revision;
+2. evaluate freshness against the authoritative repository revision and working tree;
 3. if `VALID`, load the semantic catalog and only task-relevant knowledge;
-4. if `DIRTY`, compute the repository delta and impacted topics, then revalidate those topics before relying on them;
+4. if `DIRTY`, compute the committed/working-tree delta and impacted topics, then revalidate those topics before relying on them;
 5. if `UNKNOWN`, re-establish repository evidence conservatively before project modification;
 6. if `UNINITIALIZED`, bootstrap the Library from authoritative project evidence.
 
@@ -75,7 +75,7 @@ A parent Agent delegating work SHOULD pass the project identity, current revisio
 
 ## Incremental impact analysis
 
-Project Context SHOULD maintain deterministic mappings from repository paths to knowledge topics. When the repository is `DIRTY`, an adapter computes changed paths since `validated_revision`, maps those paths to impacted topics, and revalidates only affected knowledge when the impact can be bounded.
+Project Context SHOULD maintain deterministic mappings from repository paths to knowledge topics. When the repository is `DIRTY`, an adapter computes paths changed by commits since `validated_revision` and by the current working tree, maps those paths to impacted topics, and revalidates only affected knowledge when the impact can be bounded.
 
 Impact rules are hints for invalidation, not proof that unaffected topics remain correct. Cross-cutting changes, dependency upgrades, generated-code changes, migration changes, or failed invariants MAY require broader revalidation.
 
@@ -88,9 +88,10 @@ After authorized project changes, the maintenance workflow SHOULD:
 3. preserve source/evidence references;
 4. refresh catalog/index state when required;
 5. run project-required source/tests/validation;
-6. only then advance `validated_revision` to the verified authoritative revision.
+6. ensure the intended project and knowledge changes are committed as required by project policy;
+7. only then advance `validated_revision` to the verified authoritative revision.
 
-Advancing the checkpoint before required verification is complete is non-conformant.
+Checkpoint advancement records prior verification. It MUST NOT itself mutate portable knowledge content after selecting the validated revision, because doing so would immediately make that checkpoint stale. Advancing the checkpoint before required verification is complete is non-conformant.
 
 ## Runtime boundary
 
