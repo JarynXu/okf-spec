@@ -1,6 +1,6 @@
 # OKF Library Extension
 
-Status: v0.1 draft, reference-implementation validated
+Status: v0.2 draft, reference-implementation validated
 
 The OKF Library Extension enriches Open Knowledge Format with independently distributable, mountable, semantically navigable, searchable, and maintainable knowledge units. It is additive to OKF Core: ordinary OKF bundles remain valid without Library metadata.
 
@@ -23,7 +23,7 @@ Runtime code depends on capability contracts. Local directories, Git, object sto
 
 ## Materialized package profile
 
-A local or Git-materialized Library may declare itself with the canonical `okf-library.yaml` manifest. Schema version `"1"` defines identity, version, curated semantic catalog entries, and non-executable retrieval guidance. See `MANIFEST.md`.
+A local or Git-materialized Library may declare itself with the canonical `okf-library.yaml` manifest. Schema version `"1"` defines identity, version, curated semantic catalog entries, non-executable retrieval guidance, and optional provider deployment declarations. See `MANIFEST.md` and `PROVIDER-DEPLOYMENT.md`.
 
 ## Main documents
 
@@ -31,6 +31,10 @@ A local or Git-materialized Library may declare itself with the canonical `okf-l
 - `MANIFEST.md` — `okf-library.yaml` v1 package profile.
 - `NAMESPACE.md` — virtual namespace and logical nodes.
 - `PROVIDERS.md` — capability/provider and composition contracts.
+- `PROVIDER-DEPLOYMENT.md` — optional manifest binding of concrete deployment adapters.
+- `PROCESS-PROVIDER.md` — language-neutral JSON/stdin/stdout process provider protocol.
+- `REMOTE-PROTOCOL.md` — HTTP transport for the same provider semantic envelope.
+- `FILESYSTEM.md` — read-only virtual namespace projection across native filesystem technologies.
 - `CATALOG-QUERY.md` — semantic catalog and provider retrieval model.
 - `query-result.md` — evidence-bearing provider result envelope.
 - `LIFECYCLE.md` — Runtime lifecycle semantics.
@@ -45,10 +49,16 @@ Concrete domain Libraries and their application-specific profiles belong in thei
 
 ## Reference implementation validation
 
-The Rust reference runtime validates three materially different cases through one abstraction:
+The Rust reference runtime validates materially different cases through one abstraction:
 
 - local OKF bundle;
 - Git source/materialization;
-- purely virtual/in-memory provider with no physical knowledge files.
+- purely virtual/in-memory provider with no physical knowledge files;
+- process-backed dynamic provider;
+- HTTP remote provider;
+- S3-compatible content provider;
+- SQLite content/catalog/query provider;
+- vector semantic query provider;
+- cross-platform virtual filesystem projection.
 
-The SDK additionally exposes capability-specific `CatalogProvider`, `ContentProvider`, `QueryProvider`, and `RefreshProvider` roles that can be composed into one Runtime-facing Library provider, plus a pluggable source-resolver contract. This allows future S3/object-storage, HTTP, database, remote, or agent-backed adapters without changing Runtime routing or the user's existing OKF command model.
+These are adapter implementations over the same capability model. They do not change Library identity or create parallel user-facing knowledge APIs.

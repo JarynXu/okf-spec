@@ -1,12 +1,12 @@
 # Library Manifest
 
-Status: Draft v0.1 implementation profile
+Status: Draft v0.2 implementation profile
 
 ## Purpose
 
-The Library manifest is the machine-readable declaration that lets a runtime identify a materialized Library and consume its Library-owned semantic navigation/query guidance without inferring domain structure from storage paths.
+The Library manifest is the machine-readable declaration that lets a runtime identify a materialized Library, consume its Library-owned semantic navigation/query guidance, and optionally bind deployment provider adapters without inferring domain structure from storage paths.
 
-The canonical v0.1 materialized-package manifest is:
+The canonical materialized-package manifest is:
 
 ```text
 okf-library.yaml
@@ -15,6 +15,8 @@ okf-library.yaml
 It lives at the Library root. Virtual/remote Libraries MAY provide an equivalent manifest model through provider registration instead of a physical file.
 
 ## Schema version 1
+
+Schema version `"1"` remains backward compatible. Provider deployment declarations are optional additions.
 
 ```yaml
 schema_version: "1"
@@ -34,6 +36,14 @@ query:
   capabilities: [lexical, semantic, agentic]
   hints:
     - Prefer interfaces/xcap for XCAP terminology.
+
+providers:
+  - id: remote-mcx
+    kind: http
+    capabilities: [list, read, query, refresh]
+    config:
+      base_url: https://knowledge.example.com/okf
+      token_env: MCX_KNOWLEDGE_TOKEN
 ```
 
 ### Required fields
@@ -47,6 +57,7 @@ query:
 - `version`: Library knowledge/package version.
 - `catalog`: semantic navigation entries owned by the Library.
 - `query`: retrieval guidance.
+- `providers`: deployment adapter declarations as defined by the Provider Deployment Profile.
 
 Each catalog entry has:
 
@@ -64,9 +75,20 @@ The `query` object may contain:
 
 Query declarations do not execute code and do not grant capabilities. Runtime/provider registration remains responsible for binding concrete query implementations.
 
+A provider declaration contains:
+
+- `id`: stable provider-deployment identity;
+- `kind`: host-resolved adapter kind;
+- `capabilities`: expected Library capabilities;
+- `config`: adapter-specific non-secret configuration.
+
+Provider declarations are deployment hints, not executable authority. A host MUST authorize and validate the resolved adapter before mounting it.
+
 ## Runtime/source separation
 
-Portable package metadata does not embed local installation paths, Git cache paths, credentials, or secrets. Acquisition metadata such as Local/Git source belongs to Runtime registration state. A Runtime combines package identity/catalog/query guidance with its resolved `LibrarySource` to form an active Library instance.
+Portable package metadata does not embed local installation paths, Git cache paths, credential values, or secrets. Acquisition metadata such as Local/Git source belongs to Runtime registration state. A Runtime combines package identity/catalog/query/provider guidance with its resolved `LibrarySource` to form an active Library instance.
+
+Provider configuration MAY name environment variables or credential slots but MUST NOT contain credential values.
 
 ## Semantic ownership
 
@@ -74,8 +96,8 @@ The manifest MAY carry a curated semantic catalog because that catalog expresses
 
 ## Compatibility
 
-Ordinary OKF Core bundles without `okf-library.yaml` remain valid OKF bundles. A Runtime MAY mount them through an adapter using explicit Runtime identity; they simply do not provide package-level semantic navigation/query declarations.
+Ordinary OKF Core bundles without `okf-library.yaml` remain valid OKF bundles. Existing schema-version-1 manifests without `providers` remain valid. A Runtime MAY mount ordinary bundles through an adapter using explicit Runtime identity; they simply do not provide package-level semantic navigation/query/provider declarations.
 
 ## Security
 
-Manifest content is data, not executable instructions. Credentials and secrets MUST NOT be stored in the portable manifest. Provider/runtime configuration supplies authentication and execution authority separately.
+Manifest content is untrusted data, not Agent instructions and not executable authorization. Credentials and secrets MUST NOT be stored in the portable manifest. Process execution, network access, credential resolution, and maintenance authority are granted only by Runtime/deployment policy.
